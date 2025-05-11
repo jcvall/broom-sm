@@ -14,9 +14,29 @@
 
 # broom-sm
 
-> Add a short description here!
+Python implementation of the R broom package (and other helpful functions) with a wrapper around Statsmodels.
 
-A longer description of your project goes here...
+This package was inspired from David Robinson's broom package (r-broom) that tidy's statistical results. I built this package to be used with and compliment the pyjanitor package (python-pyjanitor) created by Eric Ma.  
+
+The goal of this project is to provide tidy summaries for the following statistical models in Statsmodel & Scipy:
+
+ + OLS Regression
+ + GLM-Logit Regression
+ + GLM-Poisson Regression
+ + GLM-Gamma Regression
+ + GLM-Quantile Regression
+ + GLM-Mixed Linear Model Regression
+ + Elastic Net Regression
+ + Survival Regression
+ + ARIMA Time Series
+ + ANOVA
+ + Kruskal-Wallis ANOVA
+ + Chi Square
+ + Pearson & Spearman Correlation
+ + Bootstrap
+ + Permutations
+ + Contingentcy Tables
+ + Goodness of fit (distributions)
 
 
 <!-- pyscaffold-notes -->
