@@ -2,13 +2,12 @@
 import pandas as pd
 import sys
 
-import stats_tidy
 from .broom_func.stats_tidy import stats_tidy
 from .broom_func.stats_glance import stats_glance
 from .broom_func.stats_augment import stats_augment
 from .broom_func.boot_tidy import boot_tidy
-from .broom_funcboot_glance import boot_glance
-from .broom_funcboot_augment import boot_augment
+from .broom_func.boot_glance import boot_glance
+from .broom_func.boot_augment import boot_augment
 from .broom_func.stats_power import stats_power
 from .broom_func.stats_residual_plot import stats_residual_plot
 from .broom_func.stats_ols_plot import stats_ols_plot
