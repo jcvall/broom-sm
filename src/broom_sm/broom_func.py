@@ -6,7 +6,7 @@ import statsmodels.api as sm
 import statsmodels.stats as stp
 import statsmodels.formula.api as smf
 from scipy.stats import chi2_contingency
-import bayesian_bootstrap.bootstrap as bb
+import bayesian_bootstrap as bb
 from scipy import stats 
 from patsy import dmatrices
 import matplotlib.pyplot as plt
