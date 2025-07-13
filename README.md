@@ -16,28 +16,44 @@
 
 Python implementation of the R broom package (and other helpful functions) with a wrapper around Statsmodels.
 
-This package was inspired from David Robinson's broom package (r-broom) that tidy's statistical results. I built this package to be used with and compliment the pyjanitor package (python-pyjanitor) created by Eric Ma.  
+The broom-sm module was inspired from David Robinson's broom package (r-broom) that tidy's statistical results. I built this package to be used with and compliment the pyjanitor package (python-pyjanitor) created by Eric Ma.
 
-The goal of this project is to provide tidy summaries for the following statistical models in Statsmodel & Scipy:
+The extra-sm module was inspired from David Robinson's book "Introduction to Empirical Bayes".
 
- + OLS Regression
- + GLM-Logit Regression
- + GLM-Poisson Regression
- + GLM-Gamma Regression
- + GLM-Quantile Regression
- + GLM-Mixed Linear Model Regression
- + Elastic Net Regression
- + Survival Regression
- + ARIMA Time Series
- + ANOVA
- + Kruskal-Wallis ANOVA
- + Chi Square
- + Pearson & Spearman Correlation
- + Bootstrap
- + Permutations
- + Contingentcy Tables
- + Goodness of fit (distributions)
+The goal of this project is to provide tidy summaries for the following statistical models in Statsmodel & Scipy, with some emperical bayesian functions for analysis:
 
+**broom-sm** 
+
++ OLS Regression
++ GLM-Logit Regression
++ GLM-Poisson Regression
++ GLM-Gamma Regression
++ GLM-Quantile Regression
++ GLM-Mixed Linear Model Regression
++ Elastic Net Regression
++ Survival Regression
++ ARIMA Time Series
++ ANOVA
++ Kruskal-Wallis ANOVA
++ Chi Square
++ Pearson & Spearman Correlation
++ Bootstrap
++ Permutations
++ Contingentcy Tables
++ Goodness of fit (distributions)
+
+**extra-sm (emperical bayes functions)**
+
+* eb_fit_prior()
+* add_eb_estimate()
+* add_eb_prop_test()
+* eb_fit_mixmodel()
+* py_beta()
+* py_binom()
+* py_gamma()
+* py_possion()
+* py_normal()
+* eb_simulation()
 
 <!-- pyscaffold-notes -->
 
