@@ -55,6 +55,12 @@ The goal of this project is to provide tidy summaries for the following statisti
 * py_normal()
 * eb_simulation()
 
+### Install Package
+
+```
+pip install git+https://github.com/jcvall/broom-sm.git
+```
+
 <!-- pyscaffold-notes -->
 
 ## Note
