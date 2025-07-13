@@ -156,7 +156,7 @@ def stats_augment(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
     output_df = data[list(y_df.columns) + [col for col in X_df.columns if col != "Intercept"]].copy()
 
     output_df[".fitted"] = model_fit.fittedvalues.values
-    output_df[".resid"] = model_fit.resid_response.values # Or model_fit.resid for some models
+    output_df[".resid"] = model_fit.resid # Or model_fit.resid for some models
 
     if hasattr(model_fit, 'get_prediction'):
         predictions = model_fit.get_prediction()
@@ -174,7 +174,7 @@ def stats_augment(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
         elif hasattr(influence, 'resid_pearson'): # Fallback for some GLMs
             output_df[".std.resid"] = influence.resid_pearson
             
-    return df
+    return output_df
 
 
 @pf.register_dataframe_method
