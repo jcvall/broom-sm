@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 import pandas_flavor as pf
@@ -13,7 +14,7 @@ import seaborn as sns
 import argparse
 import logging
 import sys
-
+import broom_sm
 from broom_sm import __version__
 
 __author__ = "John C Vallier"
