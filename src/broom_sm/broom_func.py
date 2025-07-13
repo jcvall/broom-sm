@@ -14,8 +14,7 @@ import seaborn as sns
 import argparse
 import logging
 import sys
-import broom_sm
-from broom_sm import __version__
+
 
 __author__ = "John C Vallier"
 __copyright__ = "John C Vallier"
