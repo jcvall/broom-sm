@@ -22,15 +22,15 @@ The extra-sm module was inspired from David Robinson's book "Introduction to Emp
 
 The goal of this project is to provide tidy summaries for the following statistical models in Statsmodel & Scipy, with some emperical bayesian functions for analysis:
 
-**broom-sm** 
+**broom-sm**
 
 + OLS Regression
 + GLM-Logit Regression
 + GLM-Poisson Regression
++ GLM-Beta Regression
 + GLM-Gamma Regression
 + GLM-Quantile Regression
 + GLM-Mixed Linear Model Regression
-+ Elastic Net Regression
 + Survival Regression
 + ARIMA Time Series
 + ANOVA

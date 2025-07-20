@@ -27,6 +27,7 @@ MODEL_CONFIG = {
     "ols": {"fitter": smf.ols, "stat_name": "t_stat", "has_rsq": True},
     "logit": {"fitter": smf.logit, "stat_name": "z_stat", "has_rsq": False, "pseudo_rsq_attr": "prsquared"},
     "poisson": {"fitter": lambda f, d, **k: smf.glm(f, d, family=sm.families.Poisson(), **k), "stat_name": "z_stat", "has_rsq": False},
+    "beta": {"fitter": lambda f, d, **k: smf.glm(f, d, family=sm.families.Beta(), **k), "stat_name": "z_stat", "has_rsq": False},
     "gamma": {"fitter": lambda f, d, **k: smf.glm(f, d, family=sm.families.Gamma(), **k), "stat_name": "z_stat", "has_rsq": False},
     "glm": {"fitter": smf.glm, "stat_name": "z_stat", "has_rsq": False}, # For generic GLM, R-squared might not be standard
     "quantreg": {"fitter": smf.quantreg, "stat_name": "t_stat", "has_rsq": False} # Has pseudo R-squared often
