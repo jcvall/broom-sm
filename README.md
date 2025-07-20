@@ -25,6 +25,7 @@ The goal of this project is to provide tidy summaries for the following statisti
 **broom-sm**
 
 + OLS Regression
++ OLS Regression Regularized (Lasso)
 + GLM-Logit Regression
 + GLM-Poisson Regression
 + GLM-Beta Regression
@@ -41,6 +42,8 @@ The goal of this project is to provide tidy summaries for the following statisti
 + Permutations
 + Contingentcy Tables
 + Goodness of fit (distributions)
++ Principle Component Analysis (PCA)
++ K-Means (Clusters)
 
 **extra-sm (emperical bayes functions)**
 
@@ -54,6 +57,7 @@ The goal of this project is to provide tidy summaries for the following statisti
 * py_possion()
 * py_normal()
 * eb_simulation()
+* bartz() - Bayesian Additive Regression Trees
 
 ### Install Package
 
