@@ -15,7 +15,6 @@ import argparse
 import logging
 import sys
 
-
 __author__ = "John C Vallier"
 __copyright__ = "John C Vallier"
 __license__ = "MIT"
