@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import pandas_flavor as pf
@@ -14,6 +13,7 @@ import seaborn as sns
 import argparse
 import logging
 import sys
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 __author__ = "John C Vallier"
 __copyright__ = "John C Vallier"
@@ -28,8 +28,8 @@ MODEL_CONFIG = {
     "poisson": {"fitter": lambda f, d, **k: smf.glm(f, d, family=sm.families.Poisson(), **k), "stat_name": "z_stat", "has_rsq": False},
     "beta": {"fitter": lambda f, d, **k: smf.glm(f, d, family=sm.families.Beta(), **k), "stat_name": "z_stat", "has_rsq": False},
     "gamma": {"fitter": lambda f, d, **k: smf.glm(f, d, family=sm.families.Gamma(), **k), "stat_name": "z_stat", "has_rsq": False},
-    "glm": {"fitter": smf.glm, "stat_name": "z_stat", "has_rsq": False}, # For generic GLM, R-squared might not be standard
-    "quantreg": {"fitter": smf.quantreg, "stat_name": "t_stat", "has_rsq": False} # Has pseudo R-squared often
+    "glm": {"fitter": smf.glm, "stat_name": "z_stat", "has_rsq": False}, 
+    "quantreg": {"fitter": smf.quantreg, "stat_name": "t_stat", "has_rsq": False} 
 }
 
 @pf.register_dataframe_method
@@ -52,11 +52,10 @@ def stats_tidy(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
     
     if hasattr(model, 'tvalues'):
         stat_values = model.tvalues.to_frame().reset_index().rename(columns={"index": "term", 0: "statistic"})
-    elif hasattr(model, 'zvalues'): # some models might use zvalues
+    elif hasattr(model, 'zvalues'): 
          stat_values = model.zvalues.to_frame().reset_index().rename(columns={"index": "term", 0: "statistic"})
-    else: # Fallback if neither tvalues nor zvalues, though unlikely for common models
+    else: 
         stat_values = pd.DataFrame(columns=['term', 'statistic'])
-
 
     p_values = model.pvalues.to_frame().reset_index().rename(columns={"index": "term", 0: "p.value"})
 
@@ -93,7 +92,7 @@ def stats_glance(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
     if hasattr(model, 'llf'): glance_dict["log_likelihood"] = model.llf
     if hasattr(model, 'aic'): glance_dict["aic"] = model.aic
     if hasattr(model, 'bic'): glance_dict["bic"] = model.bic
-    if hasattr(model, 'df_model'): glance_dict["df_model"] = model.df_model # df for model terms
+    if hasattr(model, 'df_model'): glance_dict["df_model"] = model.df_model 
     if hasattr(model, 'df_resid'): glance_dict["df_resid"] = model.df_resid
     
     # R-squared and variants
@@ -104,7 +103,7 @@ def stats_glance(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
     pseudo_rsq_attr = config.get("pseudo_rsq_attr")
     if pseudo_rsq_attr and hasattr(model, pseudo_rsq_attr):
         glance_dict["pseudo_rsquared"] = getattr(model, pseudo_rsq_attr)
-    elif stat_type == "quantreg" and hasattr(model, 'prsquared'): # QuantReg specific
+    elif stat_type == "quantreg" and hasattr(model, 'prsquared'): 
          glance_dict["pseudo_rsquared"] = model.prsquared
 
     # OLS specific F-statistic
@@ -113,11 +112,11 @@ def stats_glance(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
         if hasattr(model, 'f_pvalue'): glance_dict["f_pvalue"] = model.f_pvalue
         if hasattr(model, 'scale'): glance_dict["sigma"] = np.sqrt(model.scale)
 
-    # GLM/Logit specific (deviance, etc.) - can be expanded
+    # GLM/Logit specific (deviance, etc.)
     if stat_type in ["glm", "logit", "poisson", "gamma"]:
         if hasattr(model, 'deviance'): glance_dict["deviance"] = model.deviance
         if hasattr(model, 'pearson_chi2'): glance_dict["pearson_chi2"] = model.pearson_chi2
-        if hasattr(model, 'scale'): glance_dict["scale"] = model.scale # Dispersion for GLM
+        if hasattr(model, 'scale'): glance_dict["scale"] = model.scale 
 
     # Ensure all values are scalar or list-like for from_dict
     for key, value in glance_dict.items():
@@ -143,20 +142,16 @@ def stats_augment(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
     model_fit = fitter(formula, data=data, **kwargs).fit()
 
     # Prepare original data by getting y and X (excluding intercept)
-    # Use the original data's index for proper alignment
     y_df, X_df = dmatrices(formula, data=data, return_type="dataframe")
     
-    # Ensure X_df uses the original data's index if patsy changes it
+    # Ensure X_df uses the original data's index
     X_df = X_df.set_index(data.index)
     y_df = y_df.set_index(data.index)
 
-    # Start with original data columns used in the model
-    # This ensures we only keep relevant parts of the original data
-    # and maintain the original index.
     output_df = data[list(y_df.columns) + [col for col in X_df.columns if col != "Intercept"]].copy()
 
     output_df[".fitted"] = model_fit.fittedvalues.values
-    output_df[".resid"] = model_fit.resid # Or model_fit.resid for some models
+    output_df[".resid"] = model_fit.resid 
 
     if hasattr(model_fit, 'get_prediction'):
         predictions = model_fit.get_prediction()
@@ -167,11 +162,11 @@ def stats_augment(data: pd.DataFrame, formula: str, stat_type: str, **kwargs):
         influence = model_fit.get_influence()
         if hasattr(influence, 'hat_matrix_diag'):
             output_df[".hat"] = influence.hat_matrix_diag
-        if hasattr(influence, 'cooks_distance') and len(influence.cooks_distance[0]) == len(data): # cooks_distance can be tuple
+        if hasattr(influence, 'cooks_distance') and len(influence.cooks_distance[0]) == len(data): 
             output_df[".cooksd"] = influence.cooks_distance[0]
         if hasattr(influence, 'resid_studentized_internal'):
             output_df[".std.resid"] = influence.resid_studentized_internal
-        elif hasattr(influence, 'resid_pearson'): # Fallback for some GLMs
+        elif hasattr(influence, 'resid_pearson'): 
             output_df[".std.resid"] = influence.resid_pearson
             
     return output_df
@@ -192,7 +187,7 @@ def boot_tidy(data: pd.DataFrame, formula: str, stat_type: str, n_boot: int, see
             results_list.append(tidy_df)
         except Exception as e:
             print(f"Warning: Bootstrap sample {i} failed for tidy: {e}")
-            # Optionally, append a row with NaNs or skip
+            
     if not results_list:
         return pd.DataFrame()
     return pd.concat(results_list).reset_index(drop=True)
@@ -222,18 +217,12 @@ def boot_glance(data: pd.DataFrame, formula: str, stat_type: str, n_boot: int, s
 def boot_augment(data: pd.DataFrame, formula: str, stat_type: str, n_boot: int, seed: int = None, **kwargs):
     """
     Performs bootstrap resampling and returns augmented data for each bootstrap sample.
-    Note: This can produce a very large DataFrame.
     """
     results_list = []
     for i in range(n_boot):
         current_seed = seed + i if seed is not None else None
-        # Augment needs to apply to the *original* data using a model fit on *resampled* data.
-        # Or, augment the resampled data itself. The latter is more common for diagnostics on bootstrapped models.
-        # Let's assume augmenting the resampled data.
         resampled_data_for_fit = data.sample(n=len(data), replace=True, random_state=current_seed)
         try:
-            # Augment function should ideally take the data to augment as an argument
-            # For now, we augment the resampled data itself.
             augment_df = resampled_data_for_fit.stats_augment(formula, stat_type, **kwargs)
             augment_df[".bootstrap_id"] = i
             results_list.append(augment_df)
@@ -247,9 +236,7 @@ def boot_augment(data: pd.DataFrame, formula: str, stat_type: str, n_boot: int, 
 def stats_power(effect_size: float, alpha: float, power: float = None, obs_range: tuple = (2, 50), nobs: int = None):
     """
     Performs power analysis for an independent t-test and plots power curves.
-    Can solve for sample size if power is provided, or plot power for a range of N if nobs is not fixed.
     """
-
     power_analysis = stp.power.TTestIndPower()
     
     if power is not None and nobs is None:
@@ -257,29 +244,24 @@ def stats_power(effect_size: float, alpha: float, power: float = None, obs_range
         print(f'Required sample size (per group): {sample_size:.2f}')
     
     fig = plt.figure()
-    ax = fig.add_subplot(1,1,1) # Use a single subplot
+    ax = fig.add_subplot(1,1,1)
     ax.set_ylabel("power")
     
     plot_nobs = np.arange(obs_range[0], obs_range[1]) if nobs is None else np.array([nobs])
     
-    power_analysis.plot_power(dep_var='nobs',
-                                 nobs= plot_nobs,
-                                 effect_size=np.array([effect_size]),
-                                 ax=ax, title=r'alpha = %1.3f' % alpha) 
+    power_analysis.plot_power(
+        dep_var='nobs',
+        nobs=plot_nobs,
+        effect_size=np.array([effect_size]),
+        ax=ax, 
+        title=r'alpha = %1.3f' % alpha
+    ) 
     plt.show()
 
 
 @pf.register_dataframe_method
 def stats_residual_plot(data: pd.DataFrame, x: list, y: str):
-
     for i in x:
-        # Residual plot makes sense against predictors of a model, or fitted values.
-        # Shapiro-Wilk is for normality of a single variable (e.g., residuals).
-        # This function seems to mix concepts. Let's assume `data[i]` are residuals if y is the original outcome.
-        # Or, if `data` is an augmented frame, `i` could be a predictor and `y` the residual column.
-        # For now, interpreting `data[i]` as the variable to check for normality and plot residuals against.
-        
-        # If `data[i]` is intended to be residuals:
         if data[i].dtype.kind not in 'biufc': # Check if numeric
             print(f"Skipping non-numeric column for Shapiro-Wilk: {i}")
             continue
@@ -290,13 +272,6 @@ def stats_residual_plot(data: pd.DataFrame, x: list, y: str):
         print(f'Shapiro-Wilk Test for {i}: Statistic={shap_stat:.3f}, P-Value={shap_p:.4f}')
         
         plt.subplot(1, 2, 1)
-        # If `y` is the name of the residual column and `i` is a predictor:
-        # sns.residplot(x=data[i], y=data[y], lowess=True, color='green')
-        # If `i` is the predictor and `y` is the outcome (for a model's residuals):
-        # This requires a model to be fit first. The current signature is ambiguous.
-        # Assuming `y` is the outcome, and we want to see `i` vs residuals of `y ~ i`.
-        # This is complex to do generically here.
-        # A simpler interpretation: plot `i` vs `y` and a probability plot of `i`.
         sns.scatterplot(x=data[i], y=data[y], color='green', alpha=0.5)
         plt.title(f'Scatter: {i} vs {y}')
         
@@ -310,15 +285,13 @@ def stats_residual_plot(data: pd.DataFrame, x: list, y: str):
 
 @pf.register_dataframe_method
 def stats_ols_plot(data: pd.DataFrame, x: list, y: str):
-
     for i in x:
-        sns.jointplot(x = i, y = y, data=data, kind="reg")
+        sns.jointplot(x=i, y=y, data=data, kind="reg")
         plt.show()
 
 
 @pf.register_dataframe_method
 def stats_influence_plot(data: pd.DataFrame, formula: str, stat_type: str = "ols", alpha: float = 0.05, **kwargs):
-  
     if stat_type not in MODEL_CONFIG:
         raise ValueError(f"Unsupported stat_type: {stat_type}. Supported types are: {list(MODEL_CONFIG.keys())}")
 
@@ -328,14 +301,14 @@ def stats_influence_plot(data: pd.DataFrame, formula: str, stat_type: str = "ols
     
     fig = sm.graphics.influence_plot(model, alpha=alpha, criterion="cooks")
     fig.tight_layout(pad=1.0)
-    plt.show()	
+    plt.show()  
 
-@pf.register_dataframe_method	
+
+@pf.register_dataframe_method   
 def stats_chisquare_plot(data: pd.DataFrame, x: str, y: str):
     """
     Performs a Chi-square test of independence and plots a heatmap of observed vs expected.
     """
-    # Ensure columns are categorical or string for crosstab
     cross_tab = pd.crosstab(data[y].astype('category'), data[x].astype('category'))
     
     chi2, p, dof, expected = chi2_contingency(cross_tab, correction=True)
@@ -346,7 +319,6 @@ def stats_chisquare_plot(data: pd.DataFrame, x: str, y: str):
     print(f"Degrees of Freedom: {dof}")
     
     plt.figure(figsize=(10, 7))
-    # Plotting residuals (observed - expected) might be more informative than expected - observed
     residuals = cross_tab - expected
     sns.heatmap(residuals, annot=True, fmt=".1f", cmap="coolwarm", center=0)
     plt.title(f'Heatmap of Observed - Expected Frequencies\nChi2 p-value: {p:.4f}')
@@ -354,94 +326,99 @@ def stats_chisquare_plot(data: pd.DataFrame, x: str, y: str):
     plt.ylabel(y)
     plt.show()
     
-    return {"chi2": chi2, "p_value": p, "dof": dof, "observed": cross_tab, "expected": pd.DataFrame(expected, index=cross_tab.index, columns=cross_tab.columns)}
+    return {
+        "chi2": chi2, 
+        "p_value": p, 
+        "dof": dof, 
+        "observed": cross_tab, 
+        "expected": pd.DataFrame(expected, index=cross_tab.index, columns=cross_tab.columns)
+    }
+
 
 @pf.register_dataframe_method
 def stats_vif(data: pd.DataFrame, formula: str = None):
     """
     Calculates Variance Inflation Factor (VIF) for predictors.
-    If formula is provided, uses it to determine predictors. Otherwise, uses all numeric columns.
-    Requires an intercept in the design matrix for correct VIF calculation.
     """
-    from statsmodels.stats.outliers_influence import variance_inflation_factor
-
     if formula:
         _, X_df = dmatrices(formula, data=data, return_type="dataframe")
-        # Ensure Intercept is present for VIF calculation if not explicitly removed
         if 'Intercept' not in X_df.columns:
              X_df = sm.add_constant(X_df, has_constant='add')
     else:
         X_df = data.select_dtypes(include=np.number)
-        # Check if an intercept-like column (all ones) exists, if not, add one.
         if not any((X_df == 1).all()):
             X_df = sm.add_constant(X_df, prepend=True, has_constant='add')
 
     if 'Intercept' in X_df.columns:
-        # VIF is typically not calculated for the intercept itself if it was added.
-        # However, variance_inflation_factor needs the full matrix including intercept.
-        # We iterate over columns that are not the intercept.
         predictor_cols = [col for col in X_df.columns if col != 'Intercept']
-        if not predictor_cols: # Only intercept
+        if not predictor_cols: 
             return pd.Series(dtype=float, name="VIF")
         
-        vif_data = {col: variance_inflation_factor(X_df.values, X_df.columns.get_loc(col)) 
-                    for col in predictor_cols}
-    else: # No intercept column found or explicitly handled
-        vif_data = {X_df.columns[i]: variance_inflation_factor(X_df.values, i)
-                    for i in range(X_df.shape[1])}
+        vif_data = {
+            col: variance_inflation_factor(X_df.values, X_df.columns.get_loc(col)) 
+            for col in predictor_cols
+        }
+    else:
+        vif_data = {
+            X_df.columns[i]: variance_inflation_factor(X_df.values, i)
+            for i in range(X_df.shape[1])
+        }
 
     vif_series = pd.Series(vif_data, name="VIF")
-    vif_series = pd.Series(d)
     return vif_series
 
+
 @pf.register_dataframe_method
-def stats_formula(data: pd.DataFrame, target: str, *exclude: str): # Changed exclude to *str for direct string args
-    '''
-    Generates the R style formula for statsmodels (patsy) given
-    the dataframe, dependent variable and optional excluded columns
-    as strings
-    '''
+def stats_formula(data: pd.DataFrame, target: str, *exclude: str):
+    """
+    Generates the R style formula for statsmodels (patsy).
+    """
     df_columns = list(data.columns.values)
     df_columns.remove(target)
-    if exclude: # exclude can be a tuple of strings
+    if exclude: 
         for col in exclude:
             if col in df_columns: df_columns.remove(col)
     return target + ' ~ ' + ' + '.join(df_columns)
 
+
 @pf.register_dataframe_method
-def stats_conprob(data: pd.DataFrame, var_A_name: str, var_B_name: str, P_A_given_B: bool = True):
-    '''
-    conditional probability table a given b or p(A|B) using pd.crosstab.
-    This doesn't use the chaining method, nor can you use a categorical variables.
-    '''
-    if transpose==0:
-        table=pd.crosstab(A,B)
+def stats_conprob(data: pd.DataFrame, var_A_name: str, var_B_name: str, transpose: int = 0):
+    """
+    Conditional probability table a given b or p(A|B) using pd.crosstab.
+    """
+    A = data[var_A_name]
+    B = data[var_B_name]
+    
+    if transpose == 0:
+        table = pd.crosstab(A, B)
     else:
-        table=pd.crosstab(B,A)
-    cnames=table.columns.values
-    weights=1/table[cnames].sum()
-    out=table*weights
-    pc=table[cnames].sum()/table[cnames].sum().sum()
-    table=table.transpose()
-    cnames=table.columns.values
-    p=table[cnames].sum()/table[cnames].sum().sum()
-    out['p']=p
+        table = pd.crosstab(B, A)
+        
+    cnames = table.columns.values
+    weights = 1 / table[cnames].sum()
+    out = table * weights
+    
+    # Calculate marginal prob
+    # Note: pc variable in original code wasn't returned, assuming intent was just to calculate P(column)
+    
+    table = table.transpose()
+    cnames = table.columns.values
+    p = table[cnames].sum() / table[cnames].sum().sum()
+    out['p'] = p
     return out
 
 
 @pf.register_dataframe_method
 def bayes_boot(df: pd.DataFrame, target_column : str, n_samples : int):
-    '''bootstrap on target column and reutrns a new column on dataframe using bayesian methods'''
-    sample = bb.mean(df[target_column].dropna(axis = 0).values, n_samples)
+    """Bootstrap on target column and returns a new column on dataframe using bayesian methods"""
+    sample = bb.mean(df[target_column].dropna(axis=0).values, n_samples)
     return pd.Series(sample)
 
 
 @pf.register_dataframe_method
 def bayes_boot_plot(df: pd.DataFrame, columns: list, x_label: str, title: str):
-    
     for i in columns:
-        plt.figure() # Create a new figure for each plot
-        # Use histplot for distribution and kdeplot for density line if desired
+        plt.figure() 
         sns.histplot(df[i], kde=True, label='Bayesian Bootstrap Samples', stat="density")
         l, r = bb.highest_density_interval(df[i])
         plt.plot([l, r], [0, 0], linewidth=5.0, marker='o', label='95% HDI')
@@ -451,6 +428,7 @@ def bayes_boot_plot(df: pd.DataFrame, columns: list, x_label: str, title: str):
         plt.legend()
         sns.despine()
         plt.show()
+
 
 # --- New Standalone Tidy Functions ---
 
@@ -471,6 +449,7 @@ def stats_anova_tidy(data: pd.DataFrame, formula: str, anova_type: int = 2, **kw
     
     return anova_table
 
+
 @pf.register_dataframe_method
 def stats_kruskal_tidy(data: pd.DataFrame, value_col: str, group_col: str):
     """
@@ -478,9 +457,9 @@ def stats_kruskal_tidy(data: pd.DataFrame, value_col: str, group_col: str):
     Returns a tidy DataFrame with the test statistic and p-value.
     """
     if data[value_col].isnull().any():
-        print(f"Warning: Column '{value_col}' contains NaNs. Kruskal-Wallis may fail or produce unexpected results.")
+        print(f"Warning: Column '{value_col}' contains NaNs. Kruskal-Wallis may fail.")
     if data[group_col].isnull().any():
-        print(f"Warning: Column '{group_col}' contains NaNs. Kruskal-Wallis may fail or produce unexpected results.")
+        print(f"Warning: Column '{group_col}' contains NaNs. Kruskal-Wallis may fail.")
         
     samples = [group[value_col].dropna().values for name, group in data.groupby(group_col)]
     
@@ -491,18 +470,15 @@ def stats_kruskal_tidy(data: pd.DataFrame, value_col: str, group_col: str):
         return pd.DataFrame({'statistic': [np.nan], 'p.value': [np.nan], 'df': [np.nan]})
         
     statistic, p_value = stats.kruskal(*samples)
-    df = len(samples) - 1 # Degrees of freedom
+    df = len(samples) - 1 
     
     return pd.DataFrame({'statistic': [statistic], 'p.value': [p_value], 'df': [df]})
+
 
 @pf.register_dataframe_method
 def stats_correlation_tidy(data: pd.DataFrame, col1: str = None, col2: str = None, method: str = 'pearson', columns: list = None):
     """
     Calculates Pearson or Spearman correlation.
-    - If col1 and col2 are provided, computes correlation between these two.
-    - If columns list is provided, computes pairwise correlations for these columns.
-    - If no specific columns are provided, computes for all numeric columns in data.
-    Returns a tidy DataFrame.
     """
     if method not in ['pearson', 'spearman']:
         raise ValueError("Method must be 'pearson' or 'spearman'")
@@ -512,8 +488,8 @@ def stats_correlation_tidy(data: pd.DataFrame, col1: str = None, col2: str = Non
 
     if col1 and col2:
         if data[col1].isnull().any() or data[col2].isnull().any():
-            print(f"Warning: Columns '{col1}' or '{col2}' contain NaNs. Correlation will be calculated on non-NaN pairs.")
-        # Drop NaN pairs for the calculation
+            print(f"Warning: NaNs detected. Correlation will be calculated on non-NaN pairs.")
+        
         valid_data = data[[col1, col2]].dropna()
         if len(valid_data) < 2:
              print(f"Warning: Not enough non-NaN pairs for correlation between {col1} and {col2}.")
